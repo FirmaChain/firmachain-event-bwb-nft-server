@@ -100,6 +100,7 @@ class NftService {
         name: nftName,
         description: nftDescription,
         createdBy: signer,
+        collection: 'My first NFT!',
         hash: '',
         attributes: [{ type: 'string', key: 'Keyword', description: 'BWB 2022 NFT', value: 'BWB 2022' }],
       };
