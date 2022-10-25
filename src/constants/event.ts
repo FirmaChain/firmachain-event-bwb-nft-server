@@ -21,6 +21,7 @@ export const NFT_GALLERY = process.env.NFT_GALLERY!;
 export const NFT_GALLERY_FEATURED = process.env.NFT_GALLERY_FEATURED!;
 
 export const COLLECTION_NAME = process.env.COLLECTION_NAME!;
+export const COLLECTION_ICON = process.env.COLLECTION_ICON!;
 export const AIRDROP_AMOUNT = process.env.AIRDROP_AMOUNT!;
 
 export const ADDRESSBOOK = process.env.ADDRESSBOOK!;

@@ -21,6 +21,7 @@ import {
   NFT_REWARD_QUEUE,
   NFT_DATA,
   COLLECTION_NAME,
+  COLLECTION_ICON,
 } from '../constants/event';
 
 class NftService {
@@ -58,7 +59,10 @@ class NftService {
       const nftData = await this.getNftByDappNftId(dappNftId);
       const nftDataJSON = JSON.parse(nftData);
 
-      nftDataJSON.collection = COLLECTION_NAME;
+      nftDataJSON.collection = {
+        name: COLLECTION_NAME,
+        icon: COLLECTION_ICON,
+      };
 
       return nftDataJSON;
     } catch (error) {
