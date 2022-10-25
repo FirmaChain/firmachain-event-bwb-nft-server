@@ -72,6 +72,7 @@ class GalleryService {
           amount = this.getRandomAmount(19, 20);
           break;
         case '3':
+          amount = this.getRandomAmount(15, 17);
           break;
         case '2':
         default:
