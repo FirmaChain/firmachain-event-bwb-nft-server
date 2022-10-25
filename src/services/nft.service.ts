@@ -20,6 +20,7 @@ import {
   NFT_MINT_REWARD_ADDRESS,
   NFT_REWARD_QUEUE,
   NFT_DATA,
+  COLLECTION_NAME,
 } from '../constants/event';
 
 class NftService {
@@ -49,12 +50,15 @@ class NftService {
     dappNftId: string;
     name: string;
     description: string;
+    collection: string;
     createdBy: string;
     attributes: { type: string; key: string; description: string; value: string }[];
   }> {
     try {
       const nftData = await this.getNftByDappNftId(dappNftId);
       const nftDataJSON = JSON.parse(nftData);
+
+      nftDataJSON.collection = COLLECTION_NAME;
 
       return nftDataJSON;
     } catch (error) {
@@ -100,7 +104,7 @@ class NftService {
         name: nftName,
         description: nftDescription,
         createdBy: signer,
-        collection: 'My first NFT!',
+        collection: COLLECTION_NAME,
         hash: '',
         attributes: [{ type: 'string', key: 'Keyword', description: 'BWB 2022 NFT', value: 'BWB 2022' }],
       };
