@@ -39,6 +39,9 @@ class EventScheduler {
     let rewardData = null;
 
     try {
+      const decryptMnemonic = getDecryptString(MNEMONIC, SECRET);
+      const airdropWallet = await this.firmaSDK.Wallet.fromMnemonic(decryptMnemonic);
+
       rewardData = await this.popReward();
 
       if (rewardData !== null) {
@@ -48,8 +51,6 @@ class EventScheduler {
 
         logger.info(`🚀[NFT_EVENT] SEND START ${address}`);
 
-        const decryptMnemonic = getDecryptString(MNEMONIC, SECRET);
-        const airdropWallet = await this.firmaSDK.Wallet.fromMnemonic(decryptMnemonic);
         const result = await this.firmaSDK.Bank.send(airdropWallet, address, Number(amount));
 
         if (result.code !== 0) {
@@ -65,7 +66,7 @@ class EventScheduler {
 
           telegrambot.sendMessage(
             CHAT_ID,
-            `[NFT_EVENT][SUCCESS] 2FCT ${address}\n${EXPLORER_HOST}/transactions/${result.transactionHash}`,
+            `[NFT_EVENT][SUCCESS] ${amount}FCT ${address}\n${EXPLORER_HOST}/transactions/${result.transactionHash}`,
             {
               disable_web_page_preview: true,
             }

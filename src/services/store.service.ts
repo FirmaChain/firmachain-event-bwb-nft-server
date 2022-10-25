@@ -42,8 +42,8 @@ class StoreService {
     await this.client.zAdd(key, { score: time, value });
   }
 
-  public async zTopTen(key: string): Promise<any> {
-    return await this.client.zRangeWithScores(key, 0, 10, { REV: true });
+  public async zRange(key: string, count: number): Promise<any> {
+    return await this.client.zRangeWithScores(key, 0, count, { REV: true });
   }
 
   public async push(key: string, value: string): Promise<void> {

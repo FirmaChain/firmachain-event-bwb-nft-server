@@ -184,7 +184,7 @@ class NftService {
     await this.changeRequestSignData(requestKey, signData);
     await this.changeRequestStatus(requestKey, SUCCESS);
 
-    if ((await this.isMintRewardable(signer)) === false) {
+    if ((await this.isMintRewardable(signer)) === true) {
       await this.addNftQueue(signer);
       await this.addMintRewardAddress(signer);
     }

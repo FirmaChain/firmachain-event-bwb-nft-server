@@ -48,11 +48,11 @@ class GalleryController {
       });
   };
 
-  public isDuplicateGallery = (req: Request, res: Response): void => {
+  public getMyGallery = (req: Request, res: Response): void => {
     const { address } = req.params;
 
     this.galleryService
-      .isDuplicateGallery(address)
+      .getMyGallery(address)
       .then((result) => {
         resultLog(result);
         res.send({ ...SUCCESS, result });

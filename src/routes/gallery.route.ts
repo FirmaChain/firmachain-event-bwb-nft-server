@@ -23,7 +23,7 @@ class GalleryRoute implements Routes {
     this.router.get(`${this.path}/latest/featured`, this.galleryController.getNftLatestFeatured);
 
     this.router.post(`${this.path}`, this.galleryController.submitGallery);
-    this.router.get(`${this.path}/:address`, this.galleryController.isDuplicateGallery);
+    this.router.get(`${this.path}/:address`, this.galleryController.getMyGallery);
   }
 }
 

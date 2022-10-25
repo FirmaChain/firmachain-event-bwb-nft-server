@@ -63,28 +63,30 @@ class GalleryService {
   public async submitGallery(signer: string, nftId: string, code: string): Promise<void> {
     try {
       const typeCode = code[0];
-      let rewardAmount = '';
+      let amount = '';
 
       switch (typeCode) {
         case '1':
           await this.addGallery(nftId, signer);
           await this.addGalleryFeatured(nftId, signer);
-
-          rewardAmount = this.getRandomRewardAmount(37, 42);
+          amount = this.getRandomAmount(19, 20);
           break;
         case '3':
           break;
         case '2':
         default:
           await this.addGallery(nftId, signer);
-
-          rewardAmount = this.getRandomRewardAmount(32, 36);
+          amount = this.getRandomAmount(17, 19);
           break;
       }
 
       if ((await this.isGalleryRewardable(signer)) === true) {
-        await this.addGalleryRewardAddress(signer);
-        await this.addGalleryQueue(signer, rewardAmount);
+        await this.addGalleryRewardAddress(signer, [nftId]);
+        await this.addGalleryQueue(signer, amount);
+      } else {
+        let nftIdList = JSON.parse(await this.getGalleryRewardAddress(signer)).nftIdList;
+        nftIdList.push(nftId);
+        await this.addGalleryRewardAddress(signer, nftIdList);
       }
     } catch (error) {
       console.log(error);
@@ -92,12 +94,18 @@ class GalleryService {
     }
   }
 
-  public async isDuplicateGallery(address: string): Promise<{ isRewardable: boolean }> {
+  public async getMyGallery(address: string): Promise<{ nftIdList: string[] }> {
     try {
-      const isRewardable = await this.isGalleryRewardable(address);
+      const data = await this.getGalleryRewardAddress(address);
+
+      let nftIdList: string[] = [];
+      if (data !== null) {
+        const dataJSON = JSON.parse(data);
+        nftIdList = dataJSON.nftIdList;
+      }
 
       return {
-        isRewardable,
+        nftIdList,
       };
     } catch (error) {
       console.log(error);
@@ -191,7 +199,7 @@ class GalleryService {
   }
 
   private async getGalleryLatest(): Promise<{ value: string; score: number }[]> {
-    return await this.storeService.zTopTen(NFT_GALLERY);
+    return await this.storeService.zRange(NFT_GALLERY, 8);
   }
 
   private async addGalleryFeatured(nftId: string, address: string) {
@@ -200,11 +208,15 @@ class GalleryService {
   }
 
   private async getGalleryFeaturedLatest(): Promise<{ value: string; score: number }[]> {
-    return await this.storeService.zTopTen(NFT_GALLERY_FEATURED);
+    return await this.storeService.zRange(NFT_GALLERY_FEATURED, 300);
   }
 
-  private async addGalleryRewardAddress(address: string) {
-    await this.storeService.hsetMessage(NFT_GALLERY_REWARD_ADDRESS, address, 1);
+  private async addGalleryRewardAddress(address: string, nftIdList: string[]) {
+    await this.storeService.hsetMessage(NFT_GALLERY_REWARD_ADDRESS, address, JSON.stringify({ nftIdList }));
+  }
+
+  private async getGalleryRewardAddress(address: string) {
+    return await this.storeService.hget(NFT_GALLERY_REWARD_ADDRESS, address);
   }
 
   private async isGalleryRewardable(address: string): Promise<boolean> {
@@ -216,7 +228,7 @@ class GalleryService {
     await this.storeService.push(NFT_REWARD_QUEUE, JSON.stringify({ address, amount }));
   }
 
-  private getRandomRewardAmount(min: number, max: number): string {
+  private getRandomAmount(min: number, max: number): string {
     return (Math.random() * (max - min) + min).toFixed(6);
   }
 }
