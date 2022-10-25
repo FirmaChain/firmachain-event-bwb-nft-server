@@ -1,10 +1,11 @@
 import Morgan from 'morgan';
 
+import { isIgnoreRoute } from '../utils/loggerUtil';
 import { logger } from '../utils/logger';
 
 const morganMiddleware = Morgan(
   (tokens: any, req: any, res: any) => {
-    if (req.path.includes('/requests') === false && req.path !== '/') {
+    if (isIgnoreRoute(req.path) === false) {
       return ['📘[ END ]', tokens.method(req, res), tokens.url(req, res), tokens.status(req, res)].join(' ');
     }
   },

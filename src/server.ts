@@ -4,6 +4,7 @@ import StoreService from './services/store.service';
 
 import IndexRoute from './routes/index.route';
 import NftRoute from './routes/nft.route';
+import GalleryRoute from './routes/gallery.route';
 import validateEnv from './utils/validateEnv';
 
 import * as dotenv from 'dotenv';
@@ -13,6 +14,6 @@ validateEnv();
 
 const storeService = new StoreService({ url: process.env.REDIS!, password: process.env.REDIS_PASS! });
 
-const app = new App([new IndexRoute(), new NftRoute(storeService)]);
+const app = new App([new IndexRoute(), new NftRoute(storeService), new GalleryRoute(storeService)]);
 
 app.listen();

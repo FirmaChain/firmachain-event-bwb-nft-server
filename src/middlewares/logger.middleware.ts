@@ -1,8 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
+
+import { isIgnoreRoute } from '../utils/loggerUtil';
 import { logger } from '../utils/logger';
 
 const loggerMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  if (req.path.includes('/requests') === false && req.path !== '/') {
+  if (isIgnoreRoute(req.path) === false) {
     logger.debug(['📘[START]', req.method, req.path].join(' '));
   }
   next();

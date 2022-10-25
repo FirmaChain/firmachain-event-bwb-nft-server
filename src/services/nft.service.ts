@@ -11,24 +11,52 @@ import {
   RELAY,
   PROJECT_SECRET_KEY,
   REQUEST_EXPIRE_SECOND,
-  NFT_REQUEST,
+  NFT_REQUEST_PREFIX,
   ADDRESSBOOK,
   LOGIN_MESSAGE,
   MINT_MESSAGE,
   STATION_IDENTITY,
+  AIRDROP_AMOUNT,
+  NFT_MINT_REWARD_ADDRESS,
   NFT_REWARD_QUEUE,
+  NFT_DATA,
 } from '../constants/event';
 
 class NftService {
   constructor(public storeService: StoreService, private connectService: ConnectService = new ConnectService(RELAY)) {}
 
-  public async getStatus(
-    requestKey: string
-  ): Promise<{ message: string; status: number; signer: string; addedAt: string }> {
+  public async getStatus(requestKey: string): Promise<{
+    message: string;
+    type: string;
+    status: number;
+    signer: string;
+    signData: string;
+    extra: string;
+    addedAt: string;
+  }> {
     try {
       const requestData = await this.getRequest(requestKey);
 
       return requestData;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+
+  public async getNft(dappNftId: string): Promise<{
+    nftId: string;
+    dappNftId: string;
+    name: string;
+    description: string;
+    createdBy: string;
+    attributes: { type: string; key: string; description: string; value: string }[];
+  }> {
+    try {
+      const nftData = await this.getNftByDappNftId(dappNftId);
+      const nftDataJSON = JSON.parse(nftData);
+
+      return nftDataJSON;
     } catch (error) {
       console.log(error);
       throw error;
@@ -66,9 +94,17 @@ class NftService {
     try {
       const dappNftId = v4();
       const tokenURI = await this.connectService.getGenerateTokenURI(nftImageFile, nftName, nftDescription, dappNftId);
-      const NFTData = { nftId: '', dappNftId, name: nftName, description: nftDescription, attributes: [] };
+      const NFTData = {
+        nftId: '',
+        dappNftId,
+        name: nftName,
+        description: nftDescription,
+        createdBy: signer,
+        hash: '',
+        attributes: [{ type: 'string', key: 'Keyword', description: 'BWB 2022 NFT', value: 'BWB 2022' }],
+      };
 
-      //TODO : NFT DATA SAVE
+      await this.setNftByDappNftId(dappNftId, NFTData);
 
       const message = this.createNftMintMessage(signer, tokenURI);
       const info: string = MINT_MESSAGE;
@@ -80,7 +116,7 @@ class NftService {
       const requestKey = qrcodeOrigin.replace('sign://', '');
       const qrcode = qrcodeOrigin.replace('sign://', `${STATION_IDENTITY}://`);
 
-      await this.addRequest('MINT', requestKey, signDoc, signer);
+      await this.addRequest('MINT', requestKey, signDoc, signer, dappNftId);
 
       return {
         requestKey,
@@ -106,7 +142,7 @@ class NftService {
           await this.callbackLogin(signData, requestKey, requestData.message);
           break;
         case 'MINT':
-          await this.callbackMint(requestKey, signData, requestData.signer);
+          await this.callbackMint(requestKey, signData, requestData.signer, requestData.extra);
           break;
       }
     } catch (error) {
@@ -116,13 +152,13 @@ class NftService {
 
   private async callbackLogin(signData: any, requestKey: string, originMessage: string) {
     const signRawData = signData.rawData;
+    const pubkey = this.connectService.getSingerPubkeyFromSignRaw(signRawData);
 
     if (await this.connectService.verifyArbitary(signRawData, originMessage)) {
       const signer = signData.address;
-      const pubkey = this.connectService.getSingerPubkeyFromSignRaw(signRawData);
 
-      await this.changeRequestStatus(requestKey, SUCCESS);
       await this.changeRequestSigner(requestKey, signer);
+      await this.changeRequestStatus(requestKey, SUCCESS);
 
       if ((await this.isDuplicateAddress(signer)) === false) {
         await this.addAddress(signer, pubkey);
@@ -132,15 +168,26 @@ class NftService {
     }
   }
 
-  private async callbackMint(requestKey: string, signData: any, signer: string) {
-    console.log(JSON.stringify(signData));
+  private async callbackMint(requestKey: string, signData: any, signer: string, extra: string) {
+    const rawDataJSON = JSON.parse(signData.rawData);
+    const rawLogJSON = JSON.parse(rawDataJSON.rawLog);
+    const transactionHash = rawLogJSON.transactionHash;
+    const nftId = rawLogJSON[0].events[0].attributes[2].value;
+    const nftData = await this.getNftByDappNftId(extra);
 
-    //TODO : NFT DATA SAVE
+    const nftDataJSON = JSON.parse(nftData);
+    nftDataJSON.nftId = nftId;
+    nftDataJSON.hash = transactionHash;
 
-    await this.changeRequestStatus(requestKey, SUCCESS);
+    await this.setNftByDappNftId(extra, nftDataJSON);
+
     await this.changeRequestSignData(requestKey, signData);
+    await this.changeRequestStatus(requestKey, SUCCESS);
 
-    await this.addNftQueue(signer, JSON.stringify(signData));
+    if ((await this.isMintRewardable(signer)) === false) {
+      await this.addNftQueue(signer);
+      await this.addMintRewardAddress(signer);
+    }
   }
 
   public async verify(
@@ -172,15 +219,15 @@ class NftService {
   private async addRequest(type: string, requestKey: string, message: string, signer = '', extra = ''): Promise<void> {
     const addedAt = moment.utc().format('YYYY-MM-DD HH:mm:ss');
 
-    await this.storeService.hsetMessage(`${NFT_REQUEST}${requestKey}`, 'type', type);
-    await this.storeService.hsetMessage(`${NFT_REQUEST}${requestKey}`, 'message', message);
-    await this.storeService.hsetMessage(`${NFT_REQUEST}${requestKey}`, 'status', 0);
-    await this.storeService.hsetMessage(`${NFT_REQUEST}${requestKey}`, 'signer', signer);
-    await this.storeService.hsetMessage(`${NFT_REQUEST}${requestKey}`, 'signData', '');
-    await this.storeService.hsetMessage(`${NFT_REQUEST}${requestKey}`, 'extra', extra);
-    await this.storeService.hsetMessage(`${NFT_REQUEST}${requestKey}`, 'addedAt', addedAt);
+    await this.storeService.hsetMessage(`${NFT_REQUEST_PREFIX}${requestKey}`, 'type', type);
+    await this.storeService.hsetMessage(`${NFT_REQUEST_PREFIX}${requestKey}`, 'message', message);
+    await this.storeService.hsetMessage(`${NFT_REQUEST_PREFIX}${requestKey}`, 'status', 0);
+    await this.storeService.hsetMessage(`${NFT_REQUEST_PREFIX}${requestKey}`, 'signer', signer);
+    await this.storeService.hsetMessage(`${NFT_REQUEST_PREFIX}${requestKey}`, 'signData', '');
+    await this.storeService.hsetMessage(`${NFT_REQUEST_PREFIX}${requestKey}`, 'extra', extra);
+    await this.storeService.hsetMessage(`${NFT_REQUEST_PREFIX}${requestKey}`, 'addedAt', addedAt);
 
-    await this.storeService.expireKey(`${NFT_REQUEST}${requestKey}`, Number(REQUEST_EXPIRE_SECOND));
+    await this.storeService.expireKey(`${NFT_REQUEST_PREFIX}${requestKey}`, Number(REQUEST_EXPIRE_SECOND));
   }
 
   private async getRequest(requestKey: string): Promise<{
@@ -192,7 +239,7 @@ class NftService {
     extra: string;
     addedAt: string;
   }> {
-    const result = await this.storeService.hgetAll(`${NFT_REQUEST}${requestKey}`);
+    const result = await this.storeService.hgetAll(`${NFT_REQUEST_PREFIX}${requestKey}`);
     if (result.status) result.status = Number(result.status);
     else result.status = -1;
 
@@ -200,19 +247,19 @@ class NftService {
   }
 
   private async changeRequestStatus(requestKey: string, status: number): Promise<void> {
-    await this.storeService.hsetMessage(`${NFT_REQUEST}${requestKey}`, 'status', status);
+    await this.storeService.hsetMessage(`${NFT_REQUEST_PREFIX}${requestKey}`, 'status', status);
   }
 
   private async changeRequestSigner(requestKey: string, signer: string): Promise<void> {
-    await this.storeService.hsetMessage(`${NFT_REQUEST}${requestKey}`, 'signer', signer);
+    await this.storeService.hsetMessage(`${NFT_REQUEST_PREFIX}${requestKey}`, 'signer', signer);
   }
 
   private async changeRequestSignData(requestKey: string, signData: any): Promise<void> {
-    await this.storeService.hsetMessage(`${NFT_REQUEST}${requestKey}`, 'signData', JSON.stringify(signData));
+    await this.storeService.hsetMessage(`${NFT_REQUEST_PREFIX}${requestKey}`, 'signData', JSON.stringify(signData));
   }
 
-  private async addNftQueue(address: string, signData: string) {
-    await this.storeService.push(NFT_REWARD_QUEUE, JSON.stringify({ address, signData }));
+  private async addNftQueue(address: string) {
+    await this.storeService.push(NFT_REWARD_QUEUE, JSON.stringify({ address, amount: AIRDROP_AMOUNT }));
   }
 
   private async addAddress(address: string, pubkey: string): Promise<void> {
@@ -226,6 +273,34 @@ class NftService {
   private async isDuplicateAddress(address: string): Promise<boolean> {
     const pubkey = await this.storeService.hget(ADDRESSBOOK, address);
     return pubkey !== null;
+  }
+
+  private async addMintRewardAddress(address: string): Promise<void> {
+    await this.storeService.hsetMessage(NFT_MINT_REWARD_ADDRESS, address, 1);
+  }
+
+  private async isMintRewardable(address: string): Promise<boolean> {
+    const data = await this.storeService.hget(NFT_MINT_REWARD_ADDRESS, address);
+    return data === null;
+  }
+
+  private async getNftByDappNftId(dappNftId: string) {
+    return await this.storeService.hget(NFT_DATA, dappNftId);
+  }
+
+  private async setNftByDappNftId(
+    dappNftId: string,
+    nftData: {
+      nftId: string;
+      dappNftId: string;
+      name: string;
+      description: string;
+      createdBy: string;
+      hash: string;
+      attributes: { type: string; key: string; description: string; value: string }[];
+    }
+  ) {
+    this.storeService.hsetMessage(NFT_DATA, dappNftId, JSON.stringify(nftData));
   }
 }
 

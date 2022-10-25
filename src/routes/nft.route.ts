@@ -16,6 +16,7 @@ class NftRoute implements Routes {
 
   private initializeRoutes() {
     this.router.get(`${this.path}/requests/:requestKey`, this.nftController.getStatus);
+    this.router.get(`${this.path}/:dappNftId`, this.nftController.getNft);
 
     this.router.post(`${this.path}/sign/login`, this.nftController.arbitarySignForLogin);
     this.router.post(`${this.path}/sign/mint`, this.nftController.directSignForMint);

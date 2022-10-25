@@ -1,18 +1,18 @@
 import { Request, Response } from 'express';
 
 import StoreService from '../services/store.service';
-import NftService from '../services/nft.service';
+import GalleryService from '../services/gallery.service';
 
 import { resultLog } from '../utils/logger';
 import { SUCCESS, INVALID_KEY } from '../constants/httpResult';
 
-class NftController {
-  constructor(public storeService: StoreService, private nftService = new NftService(storeService)) {}
+class GalleryController {
+  constructor(public storeService: StoreService, private galleryService = new GalleryService(storeService)) {}
 
   public getStatus = (req: Request, res: Response): void => {
     const { requestKey } = req.params;
 
-    this.nftService
+    this.galleryService
       .getStatus(requestKey)
       .then((result) => {
         res.send({ ...SUCCESS, result });
@@ -22,21 +22,8 @@ class NftController {
       });
   };
 
-  public getNft = (req: Request, res: Response): void => {
-    const { dappNftId } = req.params;
-
-    this.nftService
-      .getNft(dappNftId)
-      .then((result) => {
-        res.send(result);
-      })
-      .catch(() => {
-        res.send({ ...INVALID_KEY, result: {} });
-      });
-  };
-
   public arbitarySignForLogin = (req: Request, res: Response): void => {
-    this.nftService
+    this.galleryService
       .arbitarySignForLogin()
       .then((result) => {
         resultLog(result);
@@ -47,11 +34,11 @@ class NftController {
       });
   };
 
-  public directSignForMint = (req: Request, res: Response): void => {
-    const { signer, nftImage, nftName, nftDescription } = req.body;
+  public submitGallery = (req: Request, res: Response): void => {
+    const { signer, nftId, code } = req.body;
 
-    this.nftService
-      .directSignForMint(signer, nftImage, nftName, nftDescription)
+    this.galleryService
+      .submitGallery(signer, nftId, code)
       .then((result) => {
         resultLog(result);
         res.send({ ...SUCCESS, result });
@@ -61,11 +48,11 @@ class NftController {
       });
   };
 
-  public callback = (req: Request, res: Response): void => {
-    const { requestKey, approve, signData } = req.body;
+  public isDuplicateGallery = (req: Request, res: Response): void => {
+    const { address } = req.params;
 
-    this.nftService
-      .callback(requestKey, approve, signData)
+    this.galleryService
+      .isDuplicateGallery(address)
       .then((result) => {
         resultLog(result);
         res.send({ ...SUCCESS, result });
@@ -75,19 +62,27 @@ class NftController {
       });
   };
 
-  public verify = (req: Request, res: Response): void => {
-    const { requestKey, signature } = req.body;
-
-    this.nftService
-      .verify(requestKey, signature)
+  public getNftLatest = (req: Request, res: Response): void => {
+    this.galleryService
+      .getNftLatest()
       .then((result) => {
-        resultLog(result);
-        res.send(result);
+        res.send({ ...SUCCESS, result });
       })
       .catch(() => {
-        res.send({ requestKey, signature, isValid: false });
+        res.send({ ...INVALID_KEY, result: {} });
+      });
+  };
+
+  public getNftLatestFeatured = (req: Request, res: Response): void => {
+    this.galleryService
+      .getNftLatestFeatured()
+      .then((result) => {
+        res.send({ ...SUCCESS, result });
+      })
+      .catch(() => {
+        res.send({ ...INVALID_KEY, result: {} });
       });
   };
 }
 
-export default NftController;
+export default GalleryController;
