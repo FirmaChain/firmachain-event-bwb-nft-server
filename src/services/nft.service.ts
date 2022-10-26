@@ -34,8 +34,8 @@ class NftService {
       const nftDataList = await this.getNftList();
 
       let nftIdList: string[] = [];
-      for (let nftData in nftDataList) {
-        const nftJSONData = JSON.parse(nftData);
+      for (let key in nftDataList) {
+        const nftJSONData = JSON.parse(nftDataList[key]);
         nftIdList.push(nftJSONData.nftId);
       }
 
