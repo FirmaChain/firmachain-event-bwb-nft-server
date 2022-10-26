@@ -15,6 +15,7 @@ class NftRoute implements Routes {
   }
 
   private initializeRoutes() {
+    this.router.get(`${this.path}`, this.nftController.getNftAll);
     this.router.get(`${this.path}/requests/:requestKey`, this.nftController.getStatus);
     this.router.get(`${this.path}/:dappNftId`, this.nftController.getNft);
 

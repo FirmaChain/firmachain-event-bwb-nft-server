@@ -9,6 +9,17 @@ import { SUCCESS, INVALID_KEY } from '../constants/httpResult';
 class NftController {
   constructor(public storeService: StoreService, private nftService = new NftService(storeService)) {}
 
+  public getNftAll = (req: Request, res: Response): void => {
+    this.nftService
+      .getNftAll()
+      .then((result) => {
+        res.send(result);
+      })
+      .catch(() => {
+        res.send({ ...INVALID_KEY, result: {} });
+      });
+  };
+
   public getStatus = (req: Request, res: Response): void => {
     const { requestKey } = req.params;
 

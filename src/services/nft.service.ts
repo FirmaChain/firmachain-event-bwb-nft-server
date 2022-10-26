@@ -27,6 +27,27 @@ import {
 class NftService {
   constructor(public storeService: StoreService, private connectService: ConnectService = new ConnectService(RELAY)) {}
 
+  public async getNftAll(): Promise<{
+    nftIdList: string[];
+  }> {
+    try {
+      const nftDataList = await this.getNftList();
+
+      let nftIdList: string[] = [];
+      for (let nftData in nftDataList) {
+        const nftJSONData = JSON.parse(nftData);
+        nftIdList.push(nftJSONData.nftId);
+      }
+
+      return {
+        nftIdList,
+      };
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+
   public async getStatus(requestKey: string): Promise<{
     message: string;
     type: string;
@@ -297,6 +318,10 @@ class NftService {
     return await this.storeService.hget(NFT_DATA, dappNftId);
   }
 
+  private async getNftList(): Promise<{ [key: string]: string }> {
+    return await this.storeService.hgetAll(NFT_DATA);
+  }
+
   private async setNftByDappNftId(
     dappNftId: string,
     nftData: {
@@ -309,7 +334,7 @@ class NftService {
       attributes: { type: string; key: string; description: string; value: string }[];
     }
   ) {
-    this.storeService.hsetMessage(NFT_DATA, dappNftId, JSON.stringify(nftData));
+    await this.storeService.hsetMessage(NFT_DATA, dappNftId, JSON.stringify(nftData));
   }
 }
 
