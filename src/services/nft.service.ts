@@ -22,6 +22,7 @@ import {
   NFT_DATA,
   COLLECTION_NAME,
   COLLECTION_ICON,
+  EXPIRED_EVENT,
 } from '../constants/event';
 
 class NftService {
@@ -121,6 +122,10 @@ class NftService {
     nftDescription: string
   ): Promise<{ requestKey: string; qrcode: string }> {
     try {
+      if (EXPIRED_EVENT === 'true') {
+        throw new Error('EXPIRED NFT MINT EVENT');
+      }
+
       const dappNftId = v4();
       const tokenURI = await this.connectService.getGenerateTokenURI(nftImageFile, nftName, nftDescription, dappNftId);
       const NFTData = {

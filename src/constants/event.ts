@@ -30,3 +30,4 @@ export const LOGIN_MESSAGE = process.env.LOGIN_MESSAGE!;
 export const MINT_MESSAGE = process.env.MINT_MESSAGE!;
 
 export const STATION_IDENTITY = process.env.STATION_IDENTITY!;
+export const EXPIRED_EVENT = process.env.EXPIRED_EVENT!;
