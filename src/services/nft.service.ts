@@ -47,7 +47,7 @@ class NftService {
 
         const nftId = nftJSONData.nftId;
         const transactionHash = this.nftData[nftJSONData.nftId].txHash;
-        const createdBy = nftJSONData.nftData.createdBy;
+        const createdBy = this.nftData[nftJSONData.nftId].createdBy;
         const createdAt = this.nftData[nftJSONData.nftId].createdAt;
 
         nftIdList.push({ nftId, transactionHash, createdBy, createdAt });
