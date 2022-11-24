@@ -1,5 +1,6 @@
 .env
 /src/config.ts
+/src/nftData.json
 /dist
 /node_modules
 /logs

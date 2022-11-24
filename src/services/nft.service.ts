@@ -25,19 +25,32 @@ import {
   EXPIRED_EVENT,
 } from '../constants/event';
 
+import nftData from '../nftData.json';
+
 class NftService {
-  constructor(public storeService: StoreService, private connectService: ConnectService = new ConnectService(RELAY)) {}
+  nftData: any;
+  constructor(public storeService: StoreService, private connectService: ConnectService = new ConnectService(RELAY)) {
+    this.nftData = nftData.nftData;
+  }
 
   public async getNftAll(): Promise<{
-    nftIdList: string[];
+    nftIdList: { nftId: string; transactionHash: string; createdBy: string; createdAt: string }[];
   }> {
     try {
       const nftDataList = await this.getNftList();
 
-      let nftIdList: string[] = [];
+      let nftIdList: { nftId: string; transactionHash: string; createdBy: string; createdAt: string }[] = [];
       for (let key in nftDataList) {
         const nftJSONData = JSON.parse(nftDataList[key]);
-        nftIdList.push(nftJSONData.nftId);
+        if (nftJSONData.nftId === undefined || nftJSONData.nftId === '') continue;
+        if (this.nftData[nftJSONData.nftId] === undefined) continue;
+
+        const nftId = nftJSONData.nftId;
+        const transactionHash = this.nftData[nftJSONData.nftId].txHash;
+        const createdBy = nftJSONData.nftData.createdBy;
+        const createdAt = this.nftData[nftJSONData.nftId].createdAt;
+
+        nftIdList.push({ nftId, transactionHash, createdBy, createdAt });
       }
 
       return {
